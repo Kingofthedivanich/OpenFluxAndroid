@@ -61,6 +61,7 @@ class SocksVpnService : android.net.VpnService() {
 
                 if (ok) {
                     vpn.isRunning.set(true)
+                    notifications.startSpeedUpdates()
                     EventBus.dispatch(AppEvent.LogMessage("[I] tun2socks running"))
                     Logx.i(TAG, "tun2socks running")
                 } else {
@@ -114,6 +115,7 @@ class SocksVpnService : android.net.VpnService() {
 
     private fun stopEverything() {
         Logx.i(TAG, "stopEverything")
+        notifications.stopSpeedUpdates()
         runCatching { tun2socks.stop() }
         runCatching { supervisor.stop() }
         runCatching { vpn.stop() }
