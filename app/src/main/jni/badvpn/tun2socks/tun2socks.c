@@ -315,6 +315,7 @@ static void device_read_handler_send (void *unused, uint8_t *data, int data_len)
 static int process_device_dns_packet (uint8_t *data, int data_len);
 #endif
 static int process_device_udp_packet (uint8_t *data, int data_len);
+static int reject_device_udp_packet (uint8_t *data, int data_len);
 static err_t netif_init_func (struct netif *netif);
 static err_t netif_output_func (struct netif *netif, struct pbuf *p, ip_addr_t *ipaddr);
 static err_t netif_output_ip6_func (struct netif *netif, struct pbuf *p, ip6_addr_t *ipaddr);
@@ -1502,13 +1503,81 @@ fail:
 }
 #endif
 
+// Internet checksum over an even-length byte range, in host byte order.
+static uint16_t inet_checksum (const uint8_t *data, int len)
+{
+    uint32_t sum = 0;
+    for (int i = 0; i + 1 < len; i += 2) {
+        sum += ((uint32_t)data[i] << 8) | data[i + 1];
+    }
+    while (sum >> 16) {
+        sum = (sum & 0xFFFF) + (sum >> 16);
+    }
+    return ~sum;
+}
+
+// Answers an IPv4 UDP datagram we cannot forward with ICMP port unreachable.
+// Dropping it silently makes QUIC clients (YouTube, Chrome) wait for a timeout
+// before they retry over TCP; the ICMP error makes them switch at once.
+// Returns 1 if the packet was consumed.
+int reject_device_udp_packet (uint8_t *data, int data_len)
+{
+    ASSERT(data_len >= 0)
+
+    if (data_len < sizeof(struct ipv4_header) || (data[0] >> 4) != 4 ||
+        data[offsetof(struct ipv4_header, protocol)] != IPV4_PROTOCOL_UDP) {
+        return 0;
+    }
+
+    struct ipv4_header orig;
+    uint8_t *payload;
+    int payload_len;
+    if (!ipv4_check(data, data_len, &orig, &payload, &payload_len) || payload_len < sizeof(struct udp_header)) {
+        return 0;
+    }
+
+    // quote the original IP header and the first 8 bytes of its payload (RFC 792)
+    int quote_len = (int)(payload - data) + sizeof(struct udp_header);
+    int icmp_len = 8 + quote_len;
+    int total_len = sizeof(struct ipv4_header) + icmp_len;
+    if (total_len > BTap_GetMTU(&device)) {
+        return 1;
+    }
+
+    uint8_t *icmp = device_write_buf + sizeof(struct ipv4_header);
+    memset(icmp, 0, 8);
+    icmp[0] = 3; // destination unreachable
+    icmp[1] = 3; // port unreachable
+    memcpy(icmp + 8, data, quote_len);
+    uint16_t icmp_sum = inet_checksum(icmp, icmp_len);
+    icmp[2] = icmp_sum >> 8;
+    icmp[3] = icmp_sum & 0xFF;
+
+    struct ipv4_header reply;
+    reply.version4_ihl4 = IPV4_MAKE_VERSION_IHL(sizeof(reply));
+    reply.ds = 0;
+    reply.total_length = hton16(total_len);
+    reply.identification = hton16(0);
+    reply.flags3_fragmentoffset13 = hton16(0);
+    reply.ttl = 64;
+    reply.protocol = 1; // ICMP
+    reply.checksum = hton16(0);
+    reply.source_address = orig.destination_address;
+    reply.destination_address = orig.source_address;
+    reply.checksum = ipv4_checksum(&reply, NULL, 0);
+    memcpy(device_write_buf, &reply, sizeof(reply));
+
+    BTap_Send(&device, device_write_buf, total_len);
+    return 1;
+}
+
 int process_device_udp_packet (uint8_t *data, int data_len)
 {
     ASSERT(data_len >= 0)
 
-    // do nothing if we don't have udpgw
+    // without udpgw UDP cannot be carried; reject it instead of dropping it
     if (!options.udpgw_remote_server_addr) {
-        goto fail;
+        return reject_device_udp_packet(data, data_len);
     }
 
     BAddr local_addr;
