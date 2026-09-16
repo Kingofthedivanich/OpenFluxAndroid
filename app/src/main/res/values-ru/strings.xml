@@ -72,17 +72,6 @@
     <string name="config_saved">Сохранено</string>
     <string name="config_deleted">Удалено</string>
 
-    <!-- Ошибки состояния -->
-    <string name="err_service_not_connected">Сервис не подключён</string>
-    <string name="err_vpn_iface_not_ready">VPN-интерфейс не готов</string>
-    <string name="err_transport_not_started">Транспорт не запустился</string>
-    <string name="err_tun2socks_not_started">tun2socks не запустился</string>
-    <string name="err_transport_binary_missing">Не найден бинарник транспорта</string>
-    <string name="err_invalid_fd">Некорректный tun fd</string>
-    <string name="err_pdnsd_missing">Не найден бинарник pdnsd</string>
-    <string name="err_tun2socks_missing">Не найден бинарник tun2socks</string>
-    <string name="err_sendfd_failed">Не удалось передать tun fd</string>
-
     <string name="notify_action_stop">Отключить</string>
     <string name="notify_msg_idle">Простой</string>
     <string name="notify_msg_connecting">Подключение…</string>
