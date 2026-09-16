@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">OpenFlux</string>
-    <string name="version" translatable="false">0.0.1</string>
+    <string name="app_name">OpenFlux (fork)</string>
+    <string name="version" translatable="false">1.1.0 (core 0.0.3)</string>
 
     <string name="channel_name">VPN Service</string>
     <string name="notify_title">OpenFlux running</string>
@@ -12,6 +12,8 @@
     <string name="yandex_docs_backend">Yandex.Docs backend</string>
     <string name="vyandex_backend">Yandex.Docs backend (Volga)</string>
     <string name="max_messenger_backend">MAX Messenger backend</string>
+    <string name="cupsonline_backend">Cups.online backend</string>
+    <string name="mailru_backend">Mail.ru Docs backend</string>
 
     <string name="starting_transport">Starting transport…</string>
     <string name="starting_tsocks">Starting tun2socks…</string>
@@ -32,6 +34,7 @@
 
     <string name="select_transport">Transport</string>
     <string name="debug_mode">Debug mode</string>
+    <string name="legacy_codec">Legacy codec (old exit node)</string>
     <string name="tunnel_name">Name</string>
     <string name="document_url">Document URL</string>
     <string name="max_token">MAX token</string>

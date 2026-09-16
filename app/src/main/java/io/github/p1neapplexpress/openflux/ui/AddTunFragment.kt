@@ -37,6 +37,7 @@ class AddTunFragment : BaseFragment() {
     private val vm: TunnelsViewModel by activityViewModels()
     private var transport = TransportType.yandex
     private var debug = false
+    private var legacyCodec = false
     private var editing: Tunnel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +58,8 @@ class AddTunFragment : BaseFragment() {
         val transportLabel = view.findViewById<TextView>(R.id.selectedTransport)
         val debugLabel = view.findViewById<TextView>(R.id.selectedDebug)
         val debugSwitch = view.findViewById<SwitchMaterial>(R.id.debugSwitch)
+        val legacyCodecLabel = view.findViewById<TextView>(R.id.selectedLegacyCodec)
+        val legacyCodecSwitch = view.findViewById<SwitchMaterial>(R.id.legacyCodecSwitch)
         val docUrl = view.findViewById<TextView>(R.id.documentUrl)
         val maxToken = view.findViewById<TextView>(R.id.maxToken)
         val maxUid = view.findViewById<TextView>(R.id.maxUserId)
@@ -88,11 +91,28 @@ class AddTunFragment : BaseFragment() {
                     maxToken.setText(argValue(t.transportConnPayload, "--maxToken"))
                     maxUid.setText(argValue(t.transportConnPayload, "--maxUid"))
                 }
+                TransportType.cupsonline -> {
+                    maxContainer.isVisible = false
+                    yandexContainer.isVisible = true
+                    transportLabel.text = getString(R.string.cupsonline_backend)
+                    docUrl.setText(argValue(t.transportConnPayload, "--url"))
+                }
+                TransportType.mailru -> {
+                    maxContainer.isVisible = false
+                    yandexContainer.isVisible = true
+                    transportLabel.text = getString(R.string.mailru_backend)
+                    docUrl.setText(argValue(t.transportConnPayload, "--url"))
+                }
             }
 
             debug = t.transportConnPayload.contains("--debug")
             debugSwitch.isChecked = debug
             debugLabel.text = getString(if (debug) R.string.on else R.string.off)
+
+            legacyCodec = argValue(t.transportConnPayload, "--codec") == "legacy"
+            legacyCodecSwitch.isChecked = legacyCodec
+            legacyCodecLabel.text = getString(if (legacyCodec) R.string.on else R.string.off)
+
             save.text = getString(R.string.action_edit)
         }
 
@@ -116,12 +136,29 @@ class AddTunFragment : BaseFragment() {
                     yandexContainer.isVisible = false
                     transportLabel.text = getString(R.string.max_messenger_backend)
                 },
+                onCupsonline = {
+                    transport = TransportType.cupsonline
+                    maxContainer.isVisible = false
+                    yandexContainer.isVisible = true
+                    transportLabel.text = getString(R.string.cupsonline_backend)
+                },
+                onMailru = {
+                    transport = TransportType.mailru
+                    maxContainer.isVisible = false
+                    yandexContainer.isVisible = true
+                    transportLabel.text = getString(R.string.mailru_backend)
+                },
             )
         }
 
         debugSwitch.setOnCheckedChangeListener { _, checked ->
             debug = checked
             debugLabel.text = getString(if (checked) R.string.on else R.string.off)
+        }
+
+        legacyCodecSwitch.setOnCheckedChangeListener { _, checked ->
+            legacyCodec = checked
+            legacyCodecLabel.text = getString(if (checked) R.string.on else R.string.off)
         }
 
         save.setOnClickListener {
@@ -153,6 +190,7 @@ class AddTunFragment : BaseFragment() {
         if (editing == null) {
             transportLabel.text = getString(R.string.yandex_docs_backend)
             debugLabel.text = getString(R.string.off)
+            legacyCodecLabel.text = getString(R.string.off)
         }
     }
 
@@ -172,25 +210,46 @@ class AddTunFragment : BaseFragment() {
             TransportType.yandex -> {
                 if (docUrl.isEmpty()) return null
                 buildList {
-                    add("--client"); add("--transport"); add("yandex")
+                    add("--role"); add("client"); add("--transport"); add("yandex")
                     add("--url"); add(docUrl)
+                    if (legacyCodec) { add("--codec"); add("legacy") }
                     if (debug) add("--debug")
                 }
             }
             TransportType.vyandex -> {
                 if (docUrl.isEmpty()) return null
                 buildList {
-                    add("--client"); add("--transport"); add("vyandex")
+                    add("--role"); add("client"); add("--transport"); add("vyandex")
                     add("--url"); add(docUrl)
+                    if (legacyCodec) { add("--codec"); add("legacy") }
                     if (debug) add("--debug")
                 }
             }
             TransportType.max -> {
                 if (maxToken.isEmpty() || maxUid.isEmpty()) return null
                 buildList {
-                    add("--client"); add("--transport"); add("oneme")
+                    add("--role"); add("client"); add("--transport"); add("oneme")
                     add("--maxToken"); add(maxToken)
                     add("--maxUid"); add(maxUid)
+                    if (legacyCodec) { add("--codec"); add("legacy") }
+                    if (debug) add("--debug")
+                }
+            }
+            TransportType.cupsonline -> {
+                if (docUrl.isEmpty()) return null
+                buildList {
+                    add("--role"); add("client"); add("--transport"); add("cupsonline")
+                    add("--url"); add(docUrl)
+                    if (legacyCodec) { add("--codec"); add("legacy") }
+                    if (debug) add("--debug")
+                }
+            }
+            TransportType.mailru -> {
+                if (docUrl.isEmpty()) return null
+                buildList {
+                    add("--role"); add("client"); add("--transport"); add("mailru")
+                    add("--url"); add(docUrl)
+                    if (legacyCodec) { add("--codec"); add("legacy") }
                     if (debug) add("--debug")
                 }
             }
@@ -209,6 +268,8 @@ class AddTunFragment : BaseFragment() {
         onYandex: () -> Unit,
         onVyandex: () -> Unit,
         onMax: () -> Unit,
+        onCupsonline: () -> Unit,
+        onMailru: () -> Unit,
     ) {
         val popupView = LayoutInflater.from(context).inflate(R.layout.dropdown_transport_menu, null)
         val popup = PopupWindow(
@@ -232,6 +293,12 @@ class AddTunFragment : BaseFragment() {
         }
         popupView.findViewById<View>(R.id.option_max)?.setOnClickListener {
             onMax(); popup.dismiss()
+        }
+        popupView.findViewById<View>(R.id.option_cupsonline)?.setOnClickListener {
+            onCupsonline(); popup.dismiss()
+        }
+        popupView.findViewById<View>(R.id.option_mailru)?.setOnClickListener {
+            onMailru(); popup.dismiss()
         }
 
         popupView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
