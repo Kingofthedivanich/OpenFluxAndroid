@@ -53,6 +53,14 @@ android {
     }
 
     packaging {
+        // Must stay true: NativeProcessSupervisor execs libp1npplydtransport.so
+        // as a subprocess (ProcessBuilder), not dlopen()s it as a library --
+        // that requires a real extracted file on disk at nativeLibraryDir.
+        // useLegacyPackaging=false (direct mmap from the APK, no extraction)
+        // was tried to satisfy the 16KB page-size alignment checker, but it
+        // leaves nativeLibraryDir empty and breaks every tunnel from
+        // starting. The 16KB warning is a forward-compat notice, not a
+        // functional error, on today's 4KB-page hardware.
         jniLibs { useLegacyPackaging = true }
     }
 }
