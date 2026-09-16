@@ -12,6 +12,21 @@
     <string name="yandex_docs_backend">Бэкенд Yandex.Docs</string>
     <string name="vyandex_backend">Бэкенд Yandex.Docs (Volga)</string>
     <string name="max_messenger_backend">Бэкенд MAX Messenger</string>
+    <string name="cupsonline_backend">Бэкенд Cups.online</string>
+    <string name="mailru_backend">Бэкенд Mail.ru Docs</string>
+
+    <string name="mailru_url">Публичная ссылка (cloud.mail.ru/public/…)</string>
+    <string name="cupsonline_rooms">Список комнат от exit-ноды</string>
+    <string name="cupsonline_rooms_helper">Base64-строка, которую exit-нода печатает при запуске</string>
+    <string name="url_must_match">Должен совпадать с --url exit-ноды символ в символ</string>
+    <string name="encryption_key">Ключ шифрования (AES-256-GCM)</string>
+    <string name="encryption_key_helper">Необязательно. Не короче 16 символов, тот же, что в --encryption-key-file exit-ноды</string>
+    <string name="encryption_key_too_short">Минимум 16 символов</string>
+    <string name="cupsonline_encryption_warning">Шифрование с cups.online в текущем OpenFlux не работает: exit-нода выводит ключ из другого --url.</string>
+    <string name="legacy_codec">Старый кодек (LZ4)</string>
+    <string name="legacy_codec_off">Выкл: batched + zstd, как в OpenFlux по умолчанию</string>
+    <string name="legacy_codec_on">Вкл: только для exit-нод с --codec=legacy</string>
+    <string name="fields_required">Заполните поля транспорта</string>
 
     <string name="starting_transport">Запуск транспорта…</string>
     <string name="starting_tsocks">Запуск tun2socks…</string>
