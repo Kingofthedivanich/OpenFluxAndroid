@@ -6,8 +6,9 @@ interface IUnifiedService {
     void    stopVpn();
 
     boolean isFServiceRunning();
+    String  nativeError();
     void    stopOpenFluxNative();
-    void    startOpenFluxNative(String transport, in String[] args);
+    void    startOpenFluxNative(String transport, in String[] args, String encryptionKey);
     void    startTun2Socks();
     int     getFd();
 }
