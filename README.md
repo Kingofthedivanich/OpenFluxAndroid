@@ -13,10 +13,16 @@ Fork of [p1neappleXpress/OpenFluxAndroid](https://github.com/p1neappleXpress/Ope
 - Added the two transports core 0.0.3 shipped that the app didn't expose yet:
   `cupsonline` (Cups.online) and `mailru` (Mail.ru Docs) — both just take a
   `--url`, like Yandex.Docs/Volga.
+- Added a "legacy codec" toggle (`--codec=legacy`) for exit nodes still on
+  the pre-0.0.3 per-packet LZ4 wire format, which the new batched+zstd
+  default can't talk to.
 - [`../core/build_android.sh`](../core/build_android.sh) was host-OS aware
   (macOS/Linux/Windows) and builds `arm64-v8a` + `armeabi-v7a` + `x86_64` —
   upstream only cross-built `arm64-v8a` from a macOS host, so the other two
   ABIs the app ships `jniLibs` for had no `openflux` binary at all.
+- `applicationId` is suffixed with `.fork` (`io.github.p1neapplexpress.openflux.fork`)
+  so it installs alongside the upstream release instead of conflicting with
+  its signature.
 
 ## Building the native core binary
 
@@ -48,6 +54,6 @@ Requires JDK 17 and the Android SDK (`compileSdk`/`targetSdk` 34, `minSdk` 26).
   client doesn't need any flag for this since it just inherits the binary's
   default, but an exit node running the old 0.0.2 binary won't speak the same
   wire format — both ends must be on 0.0.3+.
-- New core 0.0.3 features not yet exposed in the UI: `--codec=legacy` and
-  `--encryption-key-file` (AES-256-GCM). Straightforward to add as extra
-  fields on `AddTunFragment` if needed.
+- New core 0.0.3 feature not yet exposed in the UI: `--encryption-key-file`
+  (AES-256-GCM). Straightforward to add as an extra field on `AddTunFragment`
+  if needed.
