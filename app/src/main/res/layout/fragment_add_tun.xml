@@ -35,7 +35,7 @@
                 android:id="@+id/name"
                 android:layout_width="match_parent"
                 android:layout_height="72dp"
-                android:hint="Tunnel Name"
+                android:hint="@string/tunnel_name"
                 android:paddingHorizontal="16dp"
                 android:textColor="#FFFFFF"
                 android:textColorHint="#98A0AE"
@@ -77,7 +77,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Transport type"
+                        android:text="@string/select_transport"
                         android:textColor="#FFFFFF"
                         android:textSize="16sp" />
 
@@ -97,6 +97,208 @@
                     android:src="@drawable/ic_chev_right"
                     app:tint="#4F7CFF"
                     tools:tint="#4F7CFF" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- URL-based Transport Fields (hint and helper depend on the transport) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/urlContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:boxBackgroundColor="#141924"
+            app:boxCornerRadiusBottomEnd="18dp"
+            app:boxCornerRadiusBottomStart="18dp"
+            app:boxCornerRadiusTopEnd="18dp"
+            app:boxCornerRadiusTopStart="18dp"
+            app:boxStrokeColor="#2A3240"
+            app:boxStrokeWidth="1dp"
+            app:boxStrokeWidthFocused="1dp"
+            app:helperTextTextColor="#98A0AE"
+            app:hintTextColor="#98A0AE">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/documentUrl"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:paddingHorizontal="16dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#98A0AE"
+                android:inputType="textUri|textNoSuggestions"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:imeOptions="actionNext" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- MAX Transport Fields -->
+        <LinearLayout
+            android:id="@+id/maxContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:boxBackgroundColor="#141924"
+                app:boxCornerRadiusBottomEnd="18dp"
+                app:boxCornerRadiusBottomStart="18dp"
+                app:boxCornerRadiusTopEnd="18dp"
+                app:boxCornerRadiusTopStart="18dp"
+                app:boxStrokeColor="#2A3240">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/maxToken"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:hint="@string/max_token"
+                    android:paddingHorizontal="16dp"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#98A0AE"
+                    android:inputType="textNoSuggestions|textVisiblePassword"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:imeOptions="actionNext"
+                    android:importantForAutofill="no" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:boxBackgroundColor="#141924"
+                app:boxCornerRadiusBottomEnd="18dp"
+                app:boxCornerRadiusBottomStart="18dp"
+                app:boxCornerRadiusTopEnd="18dp"
+                app:boxCornerRadiusTopStart="18dp"
+                app:boxStrokeColor="#2A3240">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/maxUserId"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:hint="@string/max_uid"
+                    android:paddingHorizontal="16dp"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#98A0AE"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:imeOptions="actionNext" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+
+        <!-- Encryption Key -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/encryptionKeyContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:boxBackgroundColor="#141924"
+            app:boxCornerRadiusBottomEnd="18dp"
+            app:boxCornerRadiusBottomStart="18dp"
+            app:boxCornerRadiusTopEnd="18dp"
+            app:boxCornerRadiusTopStart="18dp"
+            app:boxStrokeColor="#2A3240"
+            app:boxStrokeWidth="1dp"
+            app:boxStrokeWidthFocused="1dp"
+            app:endIconMode="password_toggle"
+            app:endIconTint="#98A0AE"
+            app:helperText="@string/encryption_key_helper"
+            app:helperTextTextColor="#98A0AE"
+            app:hintTextColor="#98A0AE">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/encryptionKey"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:hint="@string/encryption_key"
+                android:paddingHorizontal="16dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#98A0AE"
+                android:inputType="textPassword|textNoSuggestions"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:imeOptions="actionDone"
+                android:importantForAutofill="no" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:id="@+id/cupsEncryptionWarning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:paddingHorizontal="16dp"
+            android:text="@string/cupsonline_encryption_warning"
+            android:textColor="#FBBF24"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <!-- Legacy Codec Toggle -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/codecSelector"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="72dp"
+            android:layout_marginTop="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardBackgroundColor="#141924"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#2A3240"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="72dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="10dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/legacy_codec"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/selectedCodec"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/legacy_codec_off"
+                        android:textColor="#98A0AE"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/codecSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false"
+                    app:thumbTint="#4F7CFF"
+                    app:trackTint="#334F7CFF"
+                    app:useMaterialThemeColors="false" />
 
             </LinearLayout>
 
@@ -132,7 +334,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Debug mode"
+                        android:text="@string/debug_mode"
                         android:textColor="#FFFFFF"
                         android:textSize="16sp" />
 
@@ -141,7 +343,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Off"
+                        android:text="@string/off"
                         android:textColor="#98A0AE"
                         android:textSize="13sp" />
 
@@ -160,100 +362,6 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Yandex Transport Fields -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/yandexUrlContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:boxBackgroundColor="#141924"
-            app:boxCornerRadiusBottomEnd="18dp"
-            app:boxCornerRadiusBottomStart="18dp"
-            app:boxCornerRadiusTopEnd="18dp"
-            app:boxCornerRadiusTopStart="18dp"
-            app:boxStrokeColor="#2A3240"
-            app:boxStrokeWidth="1dp"
-            app:boxStrokeWidthFocused="1dp"
-            app:hintTextColor="#98A0AE">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/documentUrl"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:hint="Document URL"
-                android:paddingHorizontal="16dp"
-                android:textColor="#FFFFFF"
-                android:textColorHint="#98A0AE"
-                android:inputType="textUri"
-                android:maxLines="1"
-                android:singleLine="true"
-                android:imeOptions="actionNext" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- MAX Transport Fields -->
-        <LinearLayout
-            android:id="@+id/maxContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:boxBackgroundColor="#141924"
-                app:boxCornerRadiusBottomEnd="18dp"
-                app:boxCornerRadiusBottomStart="18dp"
-                app:boxCornerRadiusTopEnd="18dp"
-                app:boxCornerRadiusTopStart="18dp"
-                app:boxStrokeColor="#2A3240">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/maxToken"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:hint="MAX Access Token"
-                    android:paddingHorizontal="16dp"
-                    android:textColor="#FFFFFF"
-                    android:textColorHint="#98A0AE"
-                    android:inputType="textNoSuggestions|textVisiblePassword"
-                    android:maxLines="1"
-                    android:singleLine="true"
-                    android:imeOptions="actionNext"
-                    android:importantForAutofill="no" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:boxBackgroundColor="#141924"
-                app:boxCornerRadiusBottomEnd="18dp"
-                app:boxCornerRadiusBottomStart="18dp"
-                app:boxCornerRadiusTopEnd="18dp"
-                app:boxCornerRadiusTopStart="18dp"
-                app:boxStrokeColor="#2A3240">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/maxUserId"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:hint="MAX Exit Node User Id"
-                    android:paddingHorizontal="16dp"
-                    android:textColor="#FFFFFF"
-                    android:textColorHint="#98A0AE"
-                    android:inputType="number"
-                    android:maxLines="1"
-                    android:singleLine="true"
-                    android:imeOptions="actionDone" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-        </LinearLayout>
-
         <!-- Save Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/saveButton"
@@ -261,7 +369,7 @@
             android:layout_height="56dp"
             android:layout_marginTop="24dp"
             android:backgroundTint="#334F7CFF"
-            android:text="Save"
+            android:text="@string/save"
             android:textAllCaps="false"
             android:textColor="#fff"
             android:textSize="15sp"

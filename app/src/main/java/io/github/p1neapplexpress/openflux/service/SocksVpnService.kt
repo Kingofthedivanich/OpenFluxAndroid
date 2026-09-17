@@ -27,12 +27,13 @@ class SocksVpnService : android.net.VpnService() {
     private val binder = object : IUnifiedService.Stub() {
         override fun isVpnRunning(): Boolean = vpn.isRunning.get()
         override fun stopVpn() = stopEverything()
-        override fun isFServiceRunning(): Boolean = supervisor.isConnected
+        override fun isFServiceRunning(): Boolean = supervisor.isReady
+        override fun nativeError(): String? = supervisor.error
         override fun stopOpenFluxNative() = supervisor.stop()
 
-        override fun startOpenFluxNative(transport: String?, args: Array<String>) {
+        override fun startOpenFluxNative(transport: String?, args: Array<String>, encryptionKey: String?) {
             transport ?: return
-            supervisor.start(transport, args.toList())
+            supervisor.start(args.toList(), encryptionKey)
         }
 
         override fun startTun2Socks() {
@@ -49,12 +50,9 @@ class SocksVpnService : android.net.VpnService() {
 
                 val ok = tun2socks.start(
                     fd = fd,
-                    server = i.getStringExtra(Constants.INTENT_SERVER) ?: "127.0.0.1",
-                    port = i.getIntExtra(Constants.INTENT_PORT, 1080),
+                    socksPort = supervisor.socksPort,
                     username = i.getStringExtra(Constants.INTENT_USERNAME),
                     password = i.getStringExtra(Constants.INTENT_PASSWORD),
-                    dns = i.getStringExtra(Constants.INTENT_DNS) ?: "8.8.8.8",
-                    dnsPort = i.getIntExtra(Constants.INTENT_DNS_PORT, 53),
                     ipv6 = i.getBooleanExtra(Constants.INTENT_IPV6_PROXY, false),
                     udpgw = i.getStringExtra(Constants.INTENT_UDP_GW),
                 )
@@ -79,7 +77,11 @@ class SocksVpnService : android.net.VpnService() {
         super.onCreate()
         NativeBridge.ensureLoaded(applicationContext)
         vpn = VpnServiceController(this)
-        supervisor = NativeProcessSupervisor(applicationContext)
+        supervisor = NativeProcessSupervisor(applicationContext) { message ->
+            // Without OpenFlux the VPN would silently blackhole all traffic.
+            stopEverything()
+            EventBus.dispatch(AppEvent.NativeProcessExited(message))
+        }
         tun2socks = Tun2SocksLauncher(applicationContext)
         notifications = VpnNotificationManager(this)
     }

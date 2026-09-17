@@ -62,9 +62,9 @@ Java_io_github_p1neapplexpress_openflux_NativeBridge_sendfd(
 }
 
 // NativeBridge lives in the root package
-// io.github.p1neapplexpress.libp1npplydtransport.so (no `native` subpackage).
+// io.github.p1neapplexpress.openflux (no `native` subpackage).
 static const char *classPathName =
-        "io/github/p1neapplexpress/libp1npplydtransport.so/NativeBridge";
+        "io/github/p1neapplexpress/openflux/NativeBridge";
 
 static JNINativeMethod method_table[] = {
         { "jniclose", "(I)V",

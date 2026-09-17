@@ -60,22 +60,35 @@ class TunnelsFragment : BaseFragment() {
     private var currentVisualState: TunnelState? = null
     private var popup: PopupWindow? = null
 
+    /** Tunnel to start once the VPN permission dialog returns; null starts the selected one. */
+    private var pendingStart: Tunnel? = null
+
     private val vpnPermission = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == RESULT_OK) vm.startCurrent()
-        else Toast.makeText(requireContext(), R.string.vpn_permission_required, Toast.LENGTH_LONG).show()
+        val tunnel = pendingStart
+        pendingStart = null
+        if (result.resultCode != RESULT_OK) {
+            Toast.makeText(requireContext(), R.string.vpn_permission_required, Toast.LENGTH_LONG).show()
+        } else if (tunnel != null) {
+            vm.startTunnel(tunnel)
+        } else {
+            vm.startCurrent()
+        }
     }
 
     private val qrScanner = registerForActivityResult(ScanQRCode()) { result ->
         val raw = (result as? QRResult.QRSuccess)?.content?.rawValue
             ?: return@registerForActivityResult
-        runCatching { Json.decodeFromString<Tunnel>(raw) }
-            .onSuccess { vm.addTunnel(it); vm.startTunnel(it) }
+        runCatching { qrJson.decodeFromString<Tunnel>(raw) }
+            .onSuccess { vm.addTunnel(it); requestVpnAndStart(it) }
             .onFailure {
                 Toast.makeText(requireContext(), R.string.qr_scan_failed, Toast.LENGTH_LONG).show()
             }
     }
+
+    // QR codes may come from newer app versions with fields this one doesn't know.
+    private val qrJson = Json { ignoreUnknownKeys = true }
 
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?) =
         i.inflate(R.layout.fragment_tunnels, c, false)
@@ -98,11 +111,8 @@ class TunnelsFragment : BaseFragment() {
 
         connectButton.setOnClickListener {
             it.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-            when (vm.active.value) {
-                is TunnelState.Running -> vm.stop()
-                is TunnelState.Idle, is TunnelState.Error -> requestVpnAndStart()
-                else -> Unit
-            }
+            // Stopping also cancels a start that is still waiting for the transport.
+            if (vm.active.value.isActive) vm.stop() else requestVpnAndStart()
         }
 
         configSelector.setOnClickListener {
@@ -123,9 +133,16 @@ class TunnelsFragment : BaseFragment() {
         observe()
     }
 
-    private fun requestVpnAndStart() {
+    private fun requestVpnAndStart(tunnel: Tunnel? = null) {
         val intent = VpnService.prepare(requireActivity())
-        if (intent != null) vpnPermission.launch(intent) else vm.startCurrent()
+        when {
+            intent != null -> {
+                pendingStart = tunnel
+                vpnPermission.launch(intent)
+            }
+            tunnel != null -> vm.startTunnel(tunnel)
+            else -> vm.startCurrent()
+        }
     }
 
     private fun observe() {
