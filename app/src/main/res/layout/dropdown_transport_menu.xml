@@ -127,8 +127,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginEnd="12dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/cupsonline" />
+            android:src="@drawable/ic_transport_cups" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -161,8 +160,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginEnd="12dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/mailru" />
+            android:src="@drawable/ic_transport_mailru" />
 
         <TextView
             android:layout_width="wrap_content"

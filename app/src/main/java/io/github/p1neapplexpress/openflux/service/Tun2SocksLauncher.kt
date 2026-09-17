@@ -3,6 +3,7 @@ package io.github.p1neapplexpress.openflux.service
 import android.content.Context
 import io.github.p1neapplexpress.openflux.NativeBridge
 import io.github.p1neapplexpress.openflux.util.Logx
+import io.github.p1neapplexpress.openflux.util.Loopback
 import io.github.p1neapplexpress.openflux.util.ProcessRunner
 import java.io.File
 
@@ -17,18 +18,20 @@ class Tun2SocksLauncher(private val context: Context) {
         private const val NETIF_NETMASK = "255.255.255.0"
         private const val NETIF_IP6ADDR = "fdfe:dcba:9876::2"
         private const val TUN_MTU = 1500
-        private const val DNS_GW = "26.26.26.1:8091"
         private const val LOG_LEVEL = "3"
+
+        // VPN interface address (VpnServiceController). tun2socks re-injects DNS
+        // queries towards it, so pdnsd must listen there rather than on loopback.
+        private const val DNS_GW_IP = "26.26.26.1"
     }
+
+    private var dnsRelay: DnsTcpRelay? = null
 
     fun start(
         fd: Int,
-        server: String,
-        port: Int,
+        socksPort: Int,
         username: String?,
         password: String?,
-        dns: String,
-        dnsPort: Int,
         ipv6: Boolean,
         udpgw: String?,
     ): Boolean {
@@ -47,24 +50,25 @@ class Tun2SocksLauncher(private val context: Context) {
             setReadable(true, false)
         }
 
-        
-        makePdnsdConf(dns, dnsPort)
-        Logx.i(TAG, "starting pdnsd")
+        val relay = DnsTcpRelay(socksPort).start()
+        dnsRelay = relay
+        val dnsPort = Loopback.freeTcpPort()
+
+        makePdnsdConf(listenPort = dnsPort, upstreamPort = relay.port)
+        Logx.i(TAG, "starting pdnsd (DNS via tunnel)")
         ProcessRunner.execFireAndForget(
             command = listOf(pdnsdBin, "-c", "${context.filesDir}/pdnsd.conf"),
             workingDir = context.filesDir.absolutePath,
         )
         Thread.sleep(500L)
 
-        
         Logx.i(TAG, "starting tun2socks")
         ProcessRunner.execFireAndForget(
-            command = buildCommand(tun2socksBin, fd, server, port, username, password, ipv6, udpgw, sockPath),
+            command = buildCommand(tun2socksBin, fd, socksPort, dnsPort, username, password, ipv6, udpgw, sockPath),
             workingDir = context.filesDir.absolutePath,
         )
         Thread.sleep(500L)
 
-        
         for (attempt in 1..SEND_FD_ATTEMPTS) {
             val r = NativeBridge.sendfd(fd, sockPath.absolutePath)
             if (r == 0) {
@@ -88,14 +92,16 @@ class Tun2SocksLauncher(private val context: Context) {
         Logx.i(TAG, "stop()")
         ProcessRunner.killPidFile("${context.filesDir}/tun2socks.pid")
         ProcessRunner.killPidFile("${context.filesDir}/pdnsd.pid")
+        dnsRelay?.close()
+        dnsRelay = null
         runCatching { File(context.applicationInfo.dataDir, "sock_path").delete() }
     }
 
     private fun buildCommand(
         bin: String,
         fd: Int,
-        server: String,
-        port: Int,
+        socksPort: Int,
+        dnsPort: Int,
         user: String?,
         passwd: String?,
         ipv6: Boolean,
@@ -105,7 +111,7 @@ class Tun2SocksLauncher(private val context: Context) {
         add(bin)
         add("--netif-ipaddr"); add(NETIF_IPADDR)
         add("--netif-netmask"); add(NETIF_NETMASK)
-        add("--socks-server-addr"); add("$server:$port")
+        add("--socks-server-addr"); add("127.0.0.1:$socksPort")
         add("--tunfd"); add(fd.toString())
         add("--tunmtu"); add(TUN_MTU.toString())
         add("--loglevel"); add(LOG_LEVEL)
@@ -116,15 +122,16 @@ class Tun2SocksLauncher(private val context: Context) {
             add("--password"); add(passwd ?: "")
         }
         if (ipv6) { add("--netif-ip6addr"); add(NETIF_IP6ADDR) }
-        add("--dnsgw"); add(DNS_GW)
+        add("--dnsgw"); add("$DNS_GW_IP:$dnsPort")
         udpgw?.let { add("--udpgw-remote-server-addr"); add(it) }
     }
 
-    private fun makePdnsdConf(dns: String, port: Int) {
+    private fun makePdnsdConf(listenPort: Int, upstreamPort: Int) {
         val conf = context.getString(io.github.p1neapplexpress.openflux.R.string.pdnsd_conf)
             .replace("{DIR}", context.filesDir.toString())
-            .replace("{IP}", dns)
-            .replace("{PORT}", port.toString())
+            .replace("{LISTEN_IP}", DNS_GW_IP)
+            .replace("{LISTEN_PORT}", listenPort.toString())
+            .replace("{UPSTREAM_PORT}", upstreamPort.toString())
 
         val f = File(context.filesDir, "pdnsd.conf")
         f.writeText(conf)

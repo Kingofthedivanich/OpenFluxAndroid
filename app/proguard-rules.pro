@@ -19,3 +19,10 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# JNI_OnLoad in libsystem.so registers every NativeBridge native method by name
+# (including jniclose, which Kotlin never calls); if R8 strips or renames one,
+# RegisterNatives fails and the VPN service cannot start.
+-keep class io.github.p1neapplexpress.openflux.NativeBridge {
+    native <methods>;
+}
