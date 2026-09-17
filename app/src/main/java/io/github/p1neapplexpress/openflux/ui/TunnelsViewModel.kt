@@ -14,6 +14,8 @@ import io.github.p1neapplexpress.openflux.data.Tunnel
 import io.github.p1neapplexpress.openflux.data.TunnelRepository
 import io.github.p1neapplexpress.openflux.data.TunnelState
 import io.github.p1neapplexpress.openflux.data.TunnelViewType
+import io.github.p1neapplexpress.openflux.event.AppEvent
+import io.github.p1neapplexpress.openflux.event.EventBus
 import io.github.p1neapplexpress.openflux.service.SocksVpnService
 import io.github.p1neapplexpress.openflux.util.Logx
 import io.github.p1neapplexpress.openflux.vpn.VPNConfig
@@ -32,13 +34,28 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         private const val TAG = "TunnelsViewModel"
+        private const val POLL_MS = 250L
+        private const val BIND_TIMEOUT_MS = 5_000L
+
+        // The service gives OpenFlux 45 s to open its SOCKS5 port and reports failures itself.
+        private const val TRANSPORT_TIMEOUT_MS = 50_000L
+        private const val TUN2SOCKS_TIMEOUT_MS = 10_000L
     }
 
     private val repo = TunnelRepository(app)
 
+    @Volatile
     private var service: IUnifiedService? = null
     private var bound = false
     private var activeTunnelData: Tunnel? = null
+
+    // Starts and teardowns run one after another so a quick stop/start cannot
+    // unbind or stop the session that was just started.
+    private var startJob: Job? = null
+    private var teardownJob: Job? = null
+
+    @Volatile
+    private var bindRequested = false
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
@@ -75,7 +92,14 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
 
     private var uptimeJob: Job? = null
 
-    init { refresh() }
+    init {
+        refresh()
+        viewModelScope.launch {
+            EventBus.events.collect { ev ->
+                if (ev is AppEvent.NativeProcessExited && _active.value.isActive) fail(ev.message)
+            }
+        }
+    }
 
     fun startCurrent() {
         val tunnel = _active.value.tunnel
@@ -89,129 +113,136 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
         val running = _active.value
         if (running is TunnelState.Running && running.tunnel == tunnel) return
         if (running.isActive) stop()
+        val pendingTeardown = teardownJob
 
+        repo.setSelectedId(tunnel.id)
+        _selected.value = tunnel
         _active.value = TunnelState.Connecting(tunnel)
 
-        val ctx = getApplication<Application>()
-        val cfg = VPNConfig(name = tunnel.name)
-        val intent = VpnIntentFactory.build(ctx, cfg)
+        startJob = CoroutineScope(Dispatchers.IO).launch {
+            pendingTeardown?.join()
+            _active.value = TunnelState.Connecting(tunnel)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            ctx.startForegroundService(intent)
-        } else {
-            ctx.startService(intent)
-        }
-
-        ctx.bindService(
-            Intent(ctx, SocksVpnService::class.java),
-            connection,
-            Context.BIND_AUTO_CREATE,
-        )
-
-        activeTunnelData = tunnel
-
-        CoroutineScope(Dispatchers.IO).launch {
-            
-            var attempts = 0
-            while (!bound && attempts < 100) {
-                delay(50)
-                attempts++
+            val ctx = getApplication<Application>()
+            val intent = VpnIntentFactory.build(ctx, VPNConfig(name = tunnel.name))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ctx.startForegroundService(intent)
+            } else {
+                ctx.startService(intent)
             }
-            if (!bound || service == null) {
-                Logx.e(TAG, "failed to bind to service")
-                _active.value = TunnelState.Error("Service not connected")
+            bindRequested = true
+            ctx.bindService(
+                Intent(ctx, SocksVpnService::class.java),
+                connection,
+                Context.BIND_AUTO_CREATE,
+            )
+            activeTunnelData = tunnel
+
+            if (awaitBinding() == null) {
+                fail("Service not connected")
                 return@launch
             }
             Logx.i(TAG, "service bound, starting transport")
 
-            
             _active.value = TunnelState.StartingTransport(tunnel)
             try {
                 service?.startOpenFluxNative(
                     tunnel.transportType,
-                    tunnel.transportConnPayload.toTypedArray()
+                    tunnel.transportConnPayload.toTypedArray(),
+                    tunnel.encryptionKey,
                 )
             } catch (e: Exception) {
-                Logx.e(TAG, "startOpenFluxNative failed", e)
-                _active.value = TunnelState.Error("Transport failed: ${e.message}")
+                fail("Transport failed: ${e.message}")
                 return@launch
             }
 
-            
-            var transportReady = false
-            for (i in 1..40) {
-                delay(250)
-                try {
-                    if (service?.isFServiceRunning() == true) {
-                        transportReady = true
-                        Logx.i(TAG, "transport started after ${i * 250}ms")
-                        break
-                    }
-                } catch (e: Exception) {
-                    Logx.e(TAG, "isFServiceRunning threw", e)
-                }
-            }
-            if (!transportReady) {
-                Logx.e(TAG, "transport did not start")
-                _active.value = TunnelState.Error("Transport did not start")
-                return@launch
-            }
+            awaitService(TRANSPORT_TIMEOUT_MS, "Transport did not start") { it.isFServiceRunning() }
+                ?.let { fail(it); return@launch }
 
-            
             Logx.i(TAG, "starting tun2socks")
             _active.value = TunnelState.StartingTun2Socks(tunnel)
             try {
                 service?.startTun2Socks()
             } catch (e: Exception) {
-                Logx.e(TAG, "startTun2Socks failed", e)
-                _active.value = TunnelState.Error("tun2socks failed: ${e.message}")
+                fail("tun2socks failed: ${e.message}")
                 return@launch
             }
 
-            
-            var vpnReady = false
-            for (i in 1..40) {
-                delay(250)
-                try {
-                    if (service?.isVpnRunning() == true) {
-                        vpnReady = true
-                        Logx.i(TAG, "tun2socks started after ${i * 250}ms")
-                        break
-                    }
-                } catch (e: Exception) {
-                    Logx.e(TAG, "isVpnRunning threw", e)
-                }
-            }
+            awaitService(TUN2SOCKS_TIMEOUT_MS, "tun2socks did not start") { it.isVpnRunning() }
+                ?.let { fail(it); return@launch }
 
-            if (vpnReady) {
-                _active.value = TunnelState.Running(tunnel)
-                startUptimeCounter()
-            } else {
-                Logx.e(TAG, "tun2socks did not start")
-                _active.value = TunnelState.Error("tun2socks did not start")
-            }
+            _active.value = TunnelState.Running(tunnel)
+            startUptimeCounter()
             refresh()
         }
     }
 
+    /** Polls [ready] until it holds; returns null on success or the error to show. */
+    private suspend fun awaitService(
+        timeoutMs: Long,
+        timeoutMessage: String,
+        ready: (IUnifiedService) -> Boolean,
+    ): String? {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            val s = service ?: return "Service not connected"
+            try {
+                s.nativeError()?.let { return it }
+                if (ready(s)) return null
+            } catch (e: Exception) {
+                Logx.e(TAG, "service call failed", e)
+            }
+            delay(POLL_MS)
+        }
+        return timeoutMessage
+    }
+
     fun stop() {
         Logx.i(TAG, "stop()")
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                service?.stopOpenFluxNative()
-                service?.stopVpn()
-            } catch (e: Exception) {
-                Logx.e(TAG, "stop failed", e)
+        teardown(TunnelState.Idle)
+    }
+
+    private fun fail(message: String) {
+        // The start loop and the exit event can both report the same failure.
+        if (startJob == null && teardownJob?.isActive == true) return
+        Logx.e(TAG, message)
+        teardown(TunnelState.Error(message))
+    }
+
+    private fun teardown(finalState: TunnelState) {
+        startJob?.cancel()
+        startJob = null
+        val previous = teardownJob
+        teardownJob = CoroutineScope(Dispatchers.IO).launch {
+            previous?.join()
+            if (bindRequested) {
+                // A cancelled start may still be binding; the service must be stopped anyway.
+                val s = awaitBinding()
+                try {
+                    s?.stopOpenFluxNative()
+                    s?.stopVpn()
+                } catch (e: Exception) {
+                    Logx.e(TAG, "stop failed", e)
+                }
+                try { getApplication<Application>().unbindService(connection) } catch (_: Exception) {}
+                bindRequested = false
             }
-            val ctx = getApplication<Application>()
-            try { ctx.unbindService(connection) } catch (_: Exception) {}
             bound = false
             service = null
             activeTunnelData = null
-            _active.value = TunnelState.Idle
+            _active.value = finalState
             stopUptimeCounter()
             refresh()
         }
+    }
+
+    private suspend fun awaitBinding(): IUnifiedService? {
+        var waited = 0L
+        while (service == null && waited < BIND_TIMEOUT_MS) {
+            delay(50)
+            waited += 50
+        }
+        return service
     }
 
     fun refresh() {
@@ -223,7 +254,6 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectTunnel(tunnel: Tunnel) {
         if (_active.value.isActive) {
-            
             stop()
         }
         repo.setSelectedId(tunnel.id)
@@ -277,6 +307,7 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         super.onCleared()
+        startJob?.cancel()
         stopUptimeCounter()
         try { getApplication<Application>().unbindService(connection) } catch (_: Exception) {}
     }

@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<!--
+	pdnsd answers the DNS queries tun2socks redirects to {LISTEN_IP}:{LISTEN_PORT}
+	(the VPN interface address) and resolves them over TCP through DnsTcpRelay,
+	i.e. inside the tunnel.
+	-->
 	<string name="pdnsd_conf" formatted="false" translatable="false">
 global {
-    daemon=off;
 	perm_cache=1024;
 	cache_dir="{DIR}";
-	server_port = 8091;
-	server_ip = 0.0.0.0;
+	server_port = {LISTEN_PORT};
+	server_ip = {LISTEN_IP};
 	query_method=tcp_only;
 	min_ttl=15m;
 	max_ttl=1w;
@@ -16,9 +20,9 @@ global {
 }
 
 server {
-	label= "upstream";
-	ip = {IP};
-	port = {PORT};
+	label= "tunnel";
+	ip = 127.0.0.1;
+	port = {UPSTREAM_PORT};
 	uptest = none;
 }
 

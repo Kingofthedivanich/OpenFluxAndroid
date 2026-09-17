@@ -12,8 +12,8 @@ android {
         applicationId = "io.github.p1neapplexpress.openflux.fork"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1.0" // fork targeting OpenFlux core 0.0.3
+        versionCode = 10100
+        versionName = "1.1.0-fork" // synced with upstream 1.1.0; core built from our OpenFlux-WebGui fork
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
@@ -46,7 +46,6 @@ android {
     }
 
     kotlin {
-        jvmToolchain(17)
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
@@ -62,6 +61,11 @@ android {
         // starting. The 16KB warning is a forward-compat notice, not a
         // functional error, on today's 4KB-page hardware.
         jniLibs { useLegacyPackaging = true }
+    }
+
+    testOptions {
+        // Plain JVM tests touch Logx, which calls android.util.Log.
+        unitTests.isReturnDefaultValues = true
     }
 }
 
@@ -80,4 +84,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("io.github.g00fy2.quickie:quickie-bundled:1.10.0")
+
+    testImplementation("junit:junit:4.13.2")
 }
