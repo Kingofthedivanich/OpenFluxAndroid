@@ -19,9 +19,13 @@
     <string name="cupsonline_rooms">Room list from the exit node</string>
     <string name="cupsonline_rooms_helper">The base64 string the exit node prints on start</string>
     <string name="url_must_match">Must match the exit node\'s --url exactly</string>
-    <string name="encryption_key">Encryption key (AES-256-GCM)</string>
-    <string name="encryption_key_helper">Optional. At least 16 characters, same as the exit node\'s --encryption-key-file</string>
+    <string name="peer_key">Exit node public key (Noise)</string>
+    <string name="peer_key_helper">Printed by the exit node at startup (--exit-key-file). Required to enable encryption; leave empty to connect in plaintext.</string>
+    <string name="peer_key_invalid">Not a valid base64 public key</string>
+    <string name="encryption_key">Shared secret / PSK (optional)</string>
+    <string name="encryption_key_helper">Optional, needs a public key above. At least 16 characters, same as the exit node\'s --psk-file</string>
     <string name="encryption_key_too_short">At least 16 characters</string>
+    <string name="encryption_key_needs_peer">Set the exit node\'s public key above to use a PSK</string>
     <string name="cupsonline_encryption_warning">Encryption with cups.online does not work in current OpenFlux: the exit node derives the key from a different --url.</string>
     <string name="legacy_codec">Legacy codec (LZ4)</string>
     <string name="legacy_codec_off">Off: batched + zstd, the OpenFlux default</string>

@@ -31,9 +31,9 @@ class SocksVpnService : android.net.VpnService() {
         override fun nativeError(): String? = supervisor.error
         override fun stopOpenFluxNative() = supervisor.stop()
 
-        override fun startOpenFluxNative(transport: String?, args: Array<String>, encryptionKey: String?) {
+        override fun startOpenFluxNative(transport: String?, args: Array<String>, encryptionKey: String?, peerKey: String?) {
             transport ?: return
-            supervisor.start(args.toList(), encryptionKey)
+            supervisor.start(args.toList(), encryptionKey, peerKey)
         }
 
         override fun startTun2Socks() {

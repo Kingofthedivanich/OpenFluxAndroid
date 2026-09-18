@@ -196,6 +196,40 @@
 
         </LinearLayout>
 
+        <!-- Exit node public key (Noise) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/peerKeyContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:boxBackgroundColor="#141924"
+            app:boxCornerRadiusBottomEnd="18dp"
+            app:boxCornerRadiusBottomStart="18dp"
+            app:boxCornerRadiusTopEnd="18dp"
+            app:boxCornerRadiusTopStart="18dp"
+            app:boxStrokeColor="#2A3240"
+            app:boxStrokeWidth="1dp"
+            app:boxStrokeWidthFocused="1dp"
+            app:helperText="@string/peer_key_helper"
+            app:helperTextTextColor="#98A0AE"
+            app:hintTextColor="#98A0AE">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/peerKey"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:hint="@string/peer_key"
+                android:paddingHorizontal="16dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#98A0AE"
+                android:inputType="textNoSuggestions"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:imeOptions="actionNext"
+                android:importantForAutofill="no" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
         <!-- Encryption Key -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/encryptionKeyContainer"

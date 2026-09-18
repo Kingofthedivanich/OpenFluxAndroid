@@ -8,6 +8,8 @@ data class Tunnel(
     val name: String,
     val transportType: String,
     val transportConnPayload: List<String>,
-    /** Shared secret for OpenFlux's AES-256-GCM transport encryption; null means unencrypted. */
+    /** Exit node's Noise static public key (--peer-key), base64; null means unencrypted. */
+    val peerKey: String? = null,
+    /** Optional PSK on top of [peerKey] (--psk-file); ignored when peerKey is null. */
     val encryptionKey: String? = null,
 )

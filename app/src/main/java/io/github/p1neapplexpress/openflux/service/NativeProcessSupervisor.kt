@@ -64,7 +64,7 @@ class NativeProcessSupervisor(
 
     private val keyFile: File get() = File(context.noBackupFilesDir, KEY_FILE)
 
-    fun start(payload: List<String>, encryptionKey: String?) {
+    fun start(payload: List<String>, encryptionKey: String?, peerKey: String?) {
         if (running.getAndSet(true)) {
             Logx.d(TAG, "already running, ignoring start")
             return
@@ -79,8 +79,10 @@ class NativeProcessSupervisor(
             StaleProcesses.kill(nativeDir)
 
             socksPort = Loopback.freeTcpPort()
-            val keyPath = encryptionKey?.let(::writeKey)
-            val args = NativeArgs.build(payload, "127.0.0.1:$socksPort", keyPath)
+            // A PSK without a peer key is meaningless to OpenFlux (it refuses
+            // to start), so only write/pass it when there's a peer key too.
+            val keyPath = if (peerKey != null) encryptionKey?.let(::writeKey) else null
+            val args = NativeArgs.build(payload, "127.0.0.1:$socksPort", keyPath, peerKey)
             Logx.i(TAG, "exec: $NATIVE_LIB ${NativeArgs.redact(args).joinToString(" ")}")
 
             val p = ProcessBuilder(listOf("$nativeDir/$NATIVE_LIB") + args)
