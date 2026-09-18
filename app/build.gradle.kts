@@ -12,8 +12,8 @@ android {
         applicationId = "io.github.p1neapplexpress.openflux.fork"
         minSdk = 26
         targetSdk = 34
-        versionCode = 10100
-        versionName = "1.1.0-fork" // synced with upstream 1.1.0; core built from our OpenFlux-WebGui fork
+        versionCode = 10101
+        versionName = "1.1.0-fork.2" // core rebuilt against Noise encryption + client peer-key support
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")

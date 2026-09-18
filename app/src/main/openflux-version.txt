@@ -1,2 +1,2 @@
-OpenFlux f44cf57e150b520974c9d8dfafb98c24569fb730
+OpenFlux 09116dedc3f56b92df223f38ebdae1900efa2c91
 go version go1.25.3 windows/amd64
