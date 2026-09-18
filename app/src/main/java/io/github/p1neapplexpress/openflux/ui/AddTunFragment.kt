@@ -17,6 +17,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputLayout
 import io.github.p1neapplexpress.openflux.R
 import io.github.p1neapplexpress.openflux.data.EncryptionKey
+import io.github.p1neapplexpress.openflux.data.PeerKey
 import io.github.p1neapplexpress.openflux.data.TransportType
 import io.github.p1neapplexpress.openflux.data.Tunnel
 import io.github.p1neapplexpress.openflux.data.TunnelPayload
@@ -69,6 +70,8 @@ class AddTunFragment : BaseFragment() {
         val docUrl = view.findViewById<TextView>(R.id.documentUrl)
         val maxToken = view.findViewById<TextView>(R.id.maxToken)
         val maxUid = view.findViewById<TextView>(R.id.maxUserId)
+        val peerKeyContainer = view.findViewById<TextInputLayout>(R.id.peerKeyContainer)
+        val peerKey = view.findViewById<TextView>(R.id.peerKey)
         val keyContainer = view.findViewById<TextInputLayout>(R.id.encryptionKeyContainer)
         val key = view.findViewById<TextView>(R.id.encryptionKey)
         val codecSwitch = view.findViewById<SwitchMaterial>(R.id.codecSwitch)
@@ -85,6 +88,7 @@ class AddTunFragment : BaseFragment() {
             docUrl.text = form.url
             maxToken.text = form.maxToken
             maxUid.text = form.maxUid
+            peerKey.text = initial.peerKey.orEmpty()
             key.text = initial.encryptionKey.orEmpty()
             codecSwitch.isChecked = form.legacyCodec
             debugSwitch.isChecked = form.debug
@@ -107,6 +111,7 @@ class AddTunFragment : BaseFragment() {
         view.findViewById<View>(R.id.codecSelector).setOnClickListener { codecSwitch.toggle() }
         view.findViewById<View>(R.id.debugSelector).setOnClickListener { debugSwitch.toggle() }
 
+        peerKey.doAfterTextChanged { peerKeyContainer.error = null; keyContainer.error = null }
         key.doAfterTextChanged { keyContainer.error = null }
 
         save.setOnClickListener {
@@ -131,9 +136,19 @@ class AddTunFragment : BaseFragment() {
                 return@setOnClickListener
             }
 
+            val rawPeerKey = peerKey.text.toString()
+            if (rawPeerKey.isNotBlank() && !PeerKey.isValid(rawPeerKey)) {
+                peerKeyContainer.error = getString(R.string.peer_key_invalid)
+                return@setOnClickListener
+            }
+
             val rawKey = key.text.toString()
             if (rawKey.isNotBlank() && !EncryptionKey.isValid(rawKey)) {
                 keyContainer.error = getString(R.string.encryption_key_too_short)
+                return@setOnClickListener
+            }
+            if (rawKey.isNotBlank() && rawPeerKey.isBlank()) {
+                keyContainer.error = getString(R.string.encryption_key_needs_peer)
                 return@setOnClickListener
             }
 
@@ -142,6 +157,7 @@ class AddTunFragment : BaseFragment() {
                 name = tunnelName,
                 transportType = transport.name,
                 transportConnPayload = payload,
+                peerKey = rawPeerKey.takeIf { it.isNotBlank() }?.let(PeerKey::normalize),
                 encryptionKey = rawKey.takeIf { it.isNotBlank() }?.let(EncryptionKey::normalize),
             )
 

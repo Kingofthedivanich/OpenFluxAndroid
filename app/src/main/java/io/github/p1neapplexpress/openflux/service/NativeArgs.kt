@@ -4,17 +4,30 @@ package io.github.p1neapplexpress.openflux.service
 object NativeArgs {
 
     // Flags the app always sets itself; copies inside a stored payload are dropped.
-    private val OWNED_WITH_VALUE = setOf("role", "r", "inbound", "i", "socks5", "s", "encryption-key-file")
-    private val OWNED_BOOLEAN = setOf("client", "exit-node", "tun", "socks5-mode")
+    private val OWNED_WITH_VALUE = setOf("role", "r", "inbound", "i", "socks5", "s", "peer-key", "psk-file")
+    private val OWNED_BOOLEAN = setOf("client", "exit-node", "tun", "socks5-mode", "allow-plaintext")
 
     private val SECRET_VALUES = setOf("maxToken")
 
-    fun build(payload: List<String>, socksAddress: String, keyFile: String?): List<String> = buildList {
+    /**
+     * [pskFile] is a local path to an optional PSK, only meaningful together
+     * with [peerKey] -- OpenFlux rejects a PSK alone on the client (it needs
+     * the exit's public key to encrypt to). With no peerKey, OpenFlux now
+     * requires --allow-plaintext or it refuses to start at all; the app has
+     * no exit-key UI to require, so it opts into plaintext explicitly rather
+     * than fail every connection outright.
+     */
+    fun build(payload: List<String>, socksAddress: String, pskFile: String?, peerKey: String?): List<String> = buildList {
         add("--role"); add("client")
         add("--inbound"); add("socks5")
         add("--socks5"); add(socksAddress)
-        if (keyFile != null) {
-            add("--encryption-key-file"); add(keyFile)
+        if (peerKey != null) {
+            add("--peer-key"); add(peerKey)
+            if (pskFile != null) {
+                add("--psk-file"); add(pskFile)
+            }
+        } else {
+            add("--allow-plaintext")
         }
 
         var i = 0

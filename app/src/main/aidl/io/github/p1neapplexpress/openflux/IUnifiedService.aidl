@@ -8,7 +8,7 @@ interface IUnifiedService {
     boolean isFServiceRunning();
     String  nativeError();
     void    stopOpenFluxNative();
-    void    startOpenFluxNative(String transport, in String[] args, String encryptionKey);
+    void    startOpenFluxNative(String transport, in String[] args, String encryptionKey, String peerKey);
     void    startTun2Socks();
     int     getFd();
 }
