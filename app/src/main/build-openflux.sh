@@ -42,7 +42,7 @@ build() {
         # 16 KB page alignment keeps the binary runnable on 16K-page devices.
         go build -trimpath \
             -ldflags="-s -w -checklinkname=0 -extldflags=-Wl,-z,max-page-size=16384" \
-            -o "$out" .
+            -o "$out" ./cmd/openflux
     )
 }
 
